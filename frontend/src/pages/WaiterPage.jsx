@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getMenu, getTables, createOrder } from '../services/api';
+import { getMenu, getTables, createOrder, updateOrderStatus, getOrders } from '../services/api';
+import socket from '../services/socket';
+
 
 function WaiterPage() {
   const [menu, setMenu] = useState([]);
@@ -10,17 +12,28 @@ function WaiterPage() {
   const [notes, setNotes] = useState('');
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    getMenu().then(res => setMenu(res.data));
-    getTables().then(res => setTables(res.data));
-
-    // Refrescar mesas cada 5 segundos
-    const interval = setInterval(() => {
+    useEffect(() => {
+      getMenu().then(res => setMenu(res.data));
       getTables().then(res => setTables(res.data));
-    }, 5000);
+          socket.on('table_updated', () => {
+      getTables().then(res => setTables(res.data));
+    });
 
-    return () => clearInterval(interval);
-  }, []);
+      // Escuchar cambios en tiempo real
+      socket.on('order_status_changed', () => {
+        getTables().then(res => setTables(res.data));
+      });
+
+      socket.on('new_order', () => {
+        getTables().then(res => setTables(res.data));
+      });
+
+      return () => {
+        socket.off('order_status_changed');
+        socket.off('new_order');
+        socket.off('table_updated');
+      };
+    }, []);
 
   const addItem = (item) => {
     setSelectedItems(prev => {
@@ -66,7 +79,15 @@ const handleSubmit = async () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-6">🧾 Crear Pedido</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-white">🧾 Crear Pedido</h1>
+        <button
+          onClick={() => getTables().then(res => setTables(res.data))}
+          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+        >
+          🔄 Actualizar mesas
+        </button>
+      </div>
 
       {success && (
         <div className="bg-green-600 text-white px-4 py-3 rounded-lg mb-4 text-center font-semibold">

@@ -23,10 +23,10 @@ const createOrder = async (req, res) => {
     const order = new Order({ table, items, waiter, notes, total });
     const savedOrder = await order.save();
 
-    // Marcar mesa como ocupada
     await Table.updateOne({ number: table }, { status: 'occupied' });
 
     req.io.emit('new_order', savedOrder);
+    req.io.emit('table_updated');
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -47,9 +47,9 @@ const updateOrderStatus = async (req, res) => {
 
     if (!order) return res.status(404).json({ message: 'Pedido no encontrado' });
 
-    // Si el pedido está listo, liberar la mesa
     if (status === 'ready') {
       await Table.updateOne({ number: order.table }, { status: 'available' });
+      req.io.emit('table_updated');
     }
 
     req.io.emit('order_status_changed', order);
@@ -58,6 +58,7 @@ const updateOrderStatus = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 // Eliminar pedido
 const deleteOrder = async (req, res) => {
