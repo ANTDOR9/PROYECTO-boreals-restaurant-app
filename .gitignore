@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Variables de entorno — NUNCA subir esto
+.env
+backend/.env
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Vite
+frontend/dist/
+frontend/.vite/
