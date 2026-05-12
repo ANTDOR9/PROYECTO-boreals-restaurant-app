@@ -7,20 +7,13 @@ const OrderContext = createContext();
 export const OrderProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
 
-  const fetchOrders = async () => {
-    const res = await getOrders();
-    setOrders(res.data);
-  };
-
   useEffect(() => {
-    fetchOrders();
+    getOrders().then(res => setOrders(res.data)).catch(console.error);
 
-    // Escuchar nuevos pedidos en tiempo real
     socket.on('new_order', (order) => {
       setOrders((prev) => [order, ...prev]);
     });
 
-    // Escuchar cambios de estado en tiempo real
     socket.on('order_status_changed', (updatedOrder) => {
       setOrders((prev) =>
         prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o))
@@ -32,6 +25,10 @@ export const OrderProvider = ({ children }) => {
       socket.off('order_status_changed');
     };
   }, []);
+
+  const fetchOrders = () => {
+    getOrders().then(res => setOrders(res.data)).catch(console.error);
+  };
 
   return (
     <OrderContext.Provider value={{ orders, fetchOrders }}>

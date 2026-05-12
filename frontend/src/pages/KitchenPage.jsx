@@ -1,5 +1,6 @@
 import { useOrders } from '../context/OrderContext';
 import { updateOrderStatus } from '../services/api';
+import { useEffect, useRef } from 'react';
 
 const statusConfig = {
   pending: { label: 'Pendiente', color: 'bg-yellow-500', next: 'preparing', nextLabel: 'Iniciar preparación' },
@@ -16,6 +17,30 @@ function KitchenPage() {
   };
 
   const activeOrders = orders.filter(o => o.status !== 'ready');
+
+
+
+const prevOrderCount = useRef(orders.length);
+
+  useEffect(() => {
+    if (orders.length > prevOrderCount.current) {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.frequency.value = 880;
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.5);
+    }
+    prevOrderCount.current = orders.length;
+  }, [orders.length]);
+
 
   return (
     <div className="p-6">

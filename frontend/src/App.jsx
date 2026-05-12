@@ -7,28 +7,34 @@ import AdminPage from './pages/AdminPage'
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;
-  if (!roles.includes(user.role)) return <Navigate to="/login" />;
+  
+  if (!user) return <Navigate to="/login" replace />;
+  
+  if (!roles.includes(user.role)) {
+    if (user.role === 'kitchen') return <Navigate to="/kitchen" replace />;
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    if (user.role === 'waiter') return <Navigate to="/" replace />;
+  }
+  
   return children;
 };
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const navigate = () => window.location.href;
 
   return (
     <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
       <div className="flex gap-6 items-center">
         <span className="text-yellow-400 font-bold text-lg">🍽️ Boreals</span>
-        {user?.role === 'waiter' || user?.role === 'admin' ? (
+        {(user?.role === 'waiter' || user?.role === 'admin') && (
           <a href="/" className="text-gray-300 hover:text-white">Mesero</a>
-        ) : null}
-        {user?.role === 'kitchen' || user?.role === 'admin' ? (
+        )}
+        {(user?.role === 'kitchen' || user?.role === 'admin') && (
           <a href="/kitchen" className="text-gray-300 hover:text-white">Cocina</a>
-        ) : null}
-        {user?.role === 'admin' ? (
+        )}
+        {user?.role === 'admin' && (
           <a href="/admin" className="text-gray-300 hover:text-white">Admin</a>
-        ) : null}
+        )}
       </div>
       <div className="flex items-center gap-4">
         <span className="text-gray-400 text-sm">👤 {user?.username}</span>

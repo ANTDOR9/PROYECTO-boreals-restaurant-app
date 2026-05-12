@@ -13,6 +13,13 @@ function WaiterPage() {
   useEffect(() => {
     getMenu().then(res => setMenu(res.data));
     getTables().then(res => setTables(res.data));
+
+    // Refrescar mesas cada 5 segundos
+    const interval = setInterval(() => {
+      getTables().then(res => setTables(res.data));
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const addItem = (item) => {
@@ -33,26 +40,29 @@ function WaiterPage() {
     return selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2);
   };
 
-  const handleSubmit = async () => {
-    if (!selectedTable || selectedItems.length === 0 || !waiter) return;
+const handleSubmit = async () => {
+  if (!selectedTable || selectedItems.length === 0 || !waiter) return;
 
-    await createOrder({
-      table: selectedTable,
-      waiter,
-      notes,
-      items: selectedItems.map(i => ({
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity
-      }))
-    });
+  await createOrder({
+    table: selectedTable,
+    waiter,
+    notes,
+    items: selectedItems.map(i => ({
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity
+    }))
+  });
 
-    setSelectedItems([]);
-    setSelectedTable(null);
-    setNotes('');
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
-  };
+  // Refrescar mesas después de crear pedido
+  getTables().then(res => setTables(res.data));
+
+  setSelectedItems([]);
+  setSelectedTable(null);
+  setNotes('');
+  setSuccess(true);
+  setTimeout(() => setSuccess(false), 3000);
+};
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -85,14 +95,19 @@ function WaiterPage() {
               {tables.map(table => (
                 <button
                   key={table._id}
-                  onClick={() => setSelectedTable(table.number)}
+                  onClick={() => table.status === 'available' && setSelectedTable(table.number)}
                   className={`py-3 rounded-lg font-bold transition-colors ${
                     selectedTable === table.number
                       ? 'bg-yellow-400 text-gray-900'
+                      : table.status === 'occupied'
+                      ? 'bg-red-800 text-red-300 cursor-not-allowed'
                       : 'bg-gray-700 text-white hover:bg-gray-600'
                   }`}
                 >
                   {table.number}
+                  <span className="block text-xs font-normal">
+                    {table.status === 'occupied' ? '🔴 ocupada' : '🟢 libre'}
+                  </span>
                 </button>
               ))}
             </div>

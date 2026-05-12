@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Table = require('../models/Table');
 
 // Obtener todos los pedidos
 const getOrders = async (req, res) => {
@@ -22,9 +23,10 @@ const createOrder = async (req, res) => {
     const order = new Order({ table, items, waiter, notes, total });
     const savedOrder = await order.save();
 
-    // Emitir evento en tiempo real a cocina
-    req.io.emit('new_order', savedOrder);
+    // Marcar mesa como ocupada
+    await Table.updateOne({ number: table }, { status: 'occupied' });
 
+    req.io.emit('new_order', savedOrder);
     res.status(201).json(savedOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -40,14 +42,17 @@ const updateOrderStatus = async (req, res) => {
     const order = await Order.findByIdAndUpdate(
       id,
       { status },
-      { new: true }  // retorna el documento actualizado
+      { new: true }
     );
 
     if (!order) return res.status(404).json({ message: 'Pedido no encontrado' });
 
-    // Emitir cambio de estado en tiempo real
-    req.io.emit('order_status_changed', order);
+    // Si el pedido está listo, liberar la mesa
+    if (status === 'ready') {
+      await Table.updateOne({ number: order.table }, { status: 'available' });
+    }
 
+    req.io.emit('order_status_changed', order);
     res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
