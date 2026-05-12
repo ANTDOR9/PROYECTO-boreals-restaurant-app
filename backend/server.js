@@ -33,6 +33,9 @@ app.use((req, res, next) => {
 connectDB();
 
 // Rutas API
+
+const authRoutes = require('./src/routes/authRoutes');
+app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/tables', tableRoutes);
